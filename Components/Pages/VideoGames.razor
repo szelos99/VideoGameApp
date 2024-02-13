@@ -1,0 +1,82 @@
+@page "/games"
+@inject VideoGameService GameService
+@inject NavigationManager NavigationManager
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+
+<h3>Video Games</h3>
+
+@if (games == null)
+{
+    <p>Loading...</p>
+}
+else if(games.Count() == 0)
+{
+    <p>No games found</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th><Switch Label="Title" ValueExpression="() => sortTitle" ValueChanged="SwitchTitleChanged"/></th>
+                <th>Genre</th>
+                <th>Release Year</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var game in games)
+            {
+                <tr>
+                    <td>@game.Title</td>
+                    <td>@game.Genre</td>
+                    <td>@game.ReleaseYear</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => EditGame(game.Id)">Edit</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteGame(game.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-success" @onclick="AddGame">Add Game</button>
+}
+
+
+@code {
+    List<Models.VideoGame>? games;
+    bool sortTitle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        games = await GameService.GetGamesAsync();
+    }
+
+    private void AddGame()
+    {
+        NavigationManager.NavigateTo("/edit-game");
+    }
+
+    private void EditGame(int id)
+    {
+        NavigationManager.NavigateTo($"/edit-game/{id}");
+    }
+
+    private async void DeleteGame(int id)
+    {
+        await GameService.DeleteGameAsync(id);
+        games = await GameService.GetGamesAsync();
+        ToastService.Notify(new(ToastType.Success, $"Game Deleted"));
+    }
+
+    private void SwitchTitleChanged(bool value)
+    {
+        sortTitle = value; // this is mandatory
+        if(sortTitle)
+            games = games.OrderBy(game => game.Title).ToList();
+        else
+            games = games.OrderByDescending(game => game.Title).ToList();
+    }
+}

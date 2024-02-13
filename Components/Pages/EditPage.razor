@@ -1,0 +1,53 @@
+@page "/edit-game"
+@page "/edit-game/{id:int}"
+@inject VideoGameService GameService
+@inject NavigationManager NavigationManager
+@inject ToastService ToastService
+@rendermode InteractiveServer
+
+@if(Id == null){
+    <h3>Create Game</h3>
+}
+else {
+    <h3>Edit @game.Title</h3>
+}
+
+
+<EditForm Model="game" OnSubmit="HandleSubmit" FormName="Game">
+    <label>Title</label>
+    <InputText @bind-Value="game.Title">@game.Title</InputText>
+    <label>Genre</label>
+    <InputText @bind-Value="game.Genre">@game.Genre</InputText>
+    <label>Release Year</label>
+    <InputNumber @bind-Value="game.ReleaseYear">@game.ReleaseYear</InputNumber>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public int? Id {get; set;}
+    [SupplyParameterFromForm]
+    VideoGame game {get; set;} = new VideoGame{ Title = string.Empty, Genre=string.Empty, ReleaseYear=null};
+
+    protected override async Task OnParametersSetAsync() 
+    {
+        if(Id != null)
+            game = await GameService.GetGameByIdAsync((int)Id);
+    }
+
+    async Task HandleSubmit()
+    {
+        if(Id == null)
+        {
+            await GameService.AddGameAsync(game);
+            ToastService.Notify(new(ToastType.Success, $"{game.Title} Added"));
+        }
+        else
+        {
+            await GameService.UpdateGameAsync(game);
+            ToastService.Notify(new(ToastType.Success, $"{game.Title} Edited"));
+        }
+        NavigationManager.NavigateTo("/games");
+    }
+}
